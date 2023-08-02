@@ -6,7 +6,7 @@
 
 import os
 import collections
-import regex as re
+import re
 
 scrap_dir = 'Intel_MSRs/blr'
 
@@ -56,9 +56,12 @@ class MSRMap:
                         if stripped_line and re.match(r'^[0-9A-Fa-f]+H', stripped_line):  # checks if the line starts with a hexadecimal number followed by 'H'
                             parts = stripped_line.split('\t')
                             msr = parts[0].rstrip('H')
-                            name = parts[1].strip() if len(parts) > 1 else ''
+                            if(len(parts) > 2):
+                                name = parts[2].strip() 
+                            else:
+                                name = parts[1].strip() if len(parts) > 1 else ''
                             try:
-                                msr_int = int(msr, 16)  # Convert hexadecimal string to integer
+                                msr_int = int(msr, 16)
                                 file_name_without_ext = os.path.splitext(filename)[0]
                                 self.add_msr(msr_int, file_name_without_ext, name)
                             except ValueError:
@@ -81,8 +84,9 @@ class MSRMap:
         for architecture_list in architecture_lists:
             file_msrs = self.get_msrs(architecture_list)
             for msr in file_msrs:
+                #msr_cat = self.get_categories(msr)
                 msr_name = self.msr_names.get(msr, {}).get(architecture_list, "")
-                msrs.append((msr, msr_name))  # Append a tuple containing the MSR and its name
+                msrs.append((msr, msr_name))  # Append a tuple containing the MSR name & table
         # Remove duplicates and sort
         msrs = list(set(msrs))
         msrs.sort()
@@ -123,20 +127,21 @@ df_dm = {
 }
 
 
+msr_map = MSRMap()
+
 def write_msrs_to_file(msrs, filename, directory='templates'):
     with open(os.path.join(directory, filename), 'w') as f:
         f.write("# MSR # Write Mask # Comment\n")
         for msr, name in msrs:
-            try:
-                f.write('0x{0:08X} 0x0000000000000000 # "{1}"\n'.format(msr, name))
+            try: 
+                cat = msr_map.get_categories(msr);
+                f.write('0x{0:08X} 0x0000000000000000 # "{1} {2}"\n'.format(msr, name, cat))
             except ValueError:
                 print('Invalid MSR: ' + msr)
     print('Template written to templates/' + filename)
 
-
 def main():
-    print('Welcome to the MSR allow-list template generator')
-    msr_map = MSRMap()
+    print('Welcome to the MSR allow-list template generator') 
 
     while True:
         print('Available architectures:')
