@@ -135,7 +135,7 @@ def write_msrs_to_file(msrs, filename, directory='templates'):
         for msr, name in msrs:
             try: 
                 cat = msr_map.get_categories(msr);
-                f.write('0x{0:08X} 0x0000000000000000 # "{1} {2}"\n'.format(msr, name, cat))
+                f.write('0x{0:08X} 0x0000000000000000 # "{1} {2}"\n'.format(msr, name, cat[-1]))
             except ValueError:
                 print('Invalid MSR: ' + msr)
     print('Template written to templates/' + filename)
