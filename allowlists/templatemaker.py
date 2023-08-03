@@ -129,12 +129,13 @@ df_dm = {
 
 msr_map = MSRMap()
 
-def write_msrs_to_file(msrs, filename, directory='templates'):
+def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
     with open(os.path.join(directory, filename), 'w') as f:
         f.write("# MSR # Write Mask # Comment\n")
         for msr, name in msrs:
             try: 
                 cat = msr_map.get_categories(msr);
+                cat = list(set(cat).intersection(df_dm[architecture])) 
                 f.write('0x{0:08X} 0x0000000000000000 # "{1} {2}"\n'.format(msr, name, cat[-1]))
             except ValueError:
                 print('Invalid MSR: ' + msr)
@@ -154,7 +155,7 @@ def main():
             for architecture in architectures:
                 msrs = msr_map.generate_sorted_unique_msrs_for_file_list(df_dm[architecture])
                 filename = architecture + ".txt"
-                write_msrs_to_file(msrs, filename)
+                write_msrs_to_file(msrs, filename, architecture)
             break
 
         elif architecture not in df_dm:
