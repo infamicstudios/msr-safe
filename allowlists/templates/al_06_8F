@@ -1,4 +1,4 @@
-# This file contains the model-specific registers available in 06_8FH processors
+# This file contains the model-specific registers available in 06_8F processors
 # based on a close reading of Intel's public documentation.
 # Uncommenting allows reading a particular MSR.
 # Modifying the write mask allows writing to those particular bits.
