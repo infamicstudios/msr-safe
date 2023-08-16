@@ -130,13 +130,20 @@ df_dm = {
 msr_map = MSRMap()
 
 def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
+    fname = filename[:len(filename)-4]
     with open(os.path.join(directory, filename), 'w') as f:
+        f.write(f"# This file contains the model-specific registers available in {fname} processors\n"
+                "# based on a close reading of Intel's public documentation.\n"  
+                "# Uncommenting allows reading a particular MSR.\n"  
+                "# Modifying the write mask allows writing to those particular bits.\n"
+                "# Be sure to cat the modified list into /dev/cpu/msr_allowlist.\n"  
+                "# See the README file for more details.\n\n")
         f.write("# MSR # Write Mask # Comment\n")
         for msr, name in msrs:
             try: 
                 cat = msr_map.get_categories(msr);
                 cat = list(set(cat).intersection(df_dm[architecture])) 
-                f.write('0x{0:08X} 0x0000000000000000 # "{1} {2}"\n'.format(msr, name, cat[-1]))
+                f.write('# 0x{0:08X} 0x0000000000000000 # "{1} (Table: {2})"\n'.format(msr, name, cat[-1]))
             except ValueError:
                 print('Invalid MSR: ' + msr)
     print('Template written to templates/' + filename)
