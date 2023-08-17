@@ -130,15 +130,17 @@ df_dm = {
 msr_map = MSRMap()
 
 def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
-    #fname = filename[:len(filename)-4]
+    docname = ("volume 4 of the Intel 64 and IA-32 Architectures\n"
+               "# Software Development Manual (335592-079US March 2023)")
+
     with open(os.path.join(directory, "al_"+filename), 'w') as f:
         f.write(f"# This file contains the model-specific registers available in {filename} processors\n"
-                "# based on a close reading of Intel's public documentation.\n"  
+                f"# based on a close reading of {docname}.\n"  
                 "# Uncommenting allows reading a particular MSR.\n"  
                 "# Modifying the write mask allows writing to those particular bits.\n"
                 "# Be sure to cat the modified list into /dev/cpu/msr_allowlist.\n"  
-                "# See the README file for more details.\n\n")
-        f.write("# MSR # Write Mask # Comment\n")
+                "# See the README file for more details.\n#\n")
+        f.write("# MSR        # Write Mask       # Comment\n")
         for msr, name in msrs:
             try: 
                 cat = msr_map.get_categories(msr);
