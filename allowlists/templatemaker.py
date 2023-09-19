@@ -35,7 +35,7 @@ class MSRMap:
         self.file_indices[fname].append(msr)
 
 
-    def get_categories(self, msr):
+    def get_table(self, msr):
         if not self.sorted:
             self.sort()
         return self.msrs.get(msr, [])
@@ -79,19 +79,33 @@ class MSRMap:
         self.sorted = True
 
     
-    def generate_sorted_unique_msrs_for_file_list(self, architecture_lists):
+    def generate_sorted_unique_msrs_for_file_list(self, table_list):
         msrs = []
-        for architecture_list in architecture_lists:
-            file_msrs = self.get_msrs(architecture_list)
+        for table in table_list:
+            file_msrs = self.get_msrs(table)
+            #print(file_msrs)
             for msr in file_msrs:
                 #msr_cat = self.get_categories(msr)
-                msr_name = self.msr_names.get(msr, {}).get(architecture_list, "")
+                msr_name = self.msr_names.get(msr, {}).get(table, "")
+                #print(msr_name)
                 msrs.append((msr, msr_name))  # Append a tuple containing the MSR name & table
+
         # Remove duplicates and sort
         msrs = list(set(msrs))
+        
         msrs.sort()
         return msrs
 
+    def check_duplicate_name(self, msr, table_list):
+        #print(table_list)
+        #print(self.msr_names.get(msr,[]))
+        #print(msr)
+        names = self.msr_names.get(msr, table_list)
+        namess = set([name for name in names.values()])
+        if len(namess) is not 1:
+            return names
+
+        return None
 
 df_dm = {
     "06_2A": ["2-20", "2-21", "2-22"],
@@ -133,21 +147,46 @@ def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
     docname = ("volume 4 of the Intel 64 and IA-32 Architectures\n"
                "# Software Development Manual (335592-079US March 2023)")
 
+    errata_list = []
+
     with open(os.path.join(directory, "al_"+filename), 'w') as f:
-        f.write(f"# This file contains the model-specific registers available in {filename} processors\n"
-                f"# based on a close reading of {docname}.\n"  
-                "# Uncommenting allows reading a particular MSR.\n"  
-                "# Modifying the write mask allows writing to those particular bits.\n"
-                "# Be sure to cat the modified list into /dev/cpu/msr_allowlist.\n"  
-                "# See the README file for more details.\n#\n")
+        f.write(f"## This file contains the model-specific registers available in {filename} processors\n"
+                f"## based on a close reading of {docname}.\n"  
+                "## Uncommenting allows reading a particular MSR.\n"  
+                "## Modifying the write mask allows writing to those particular bits.\n"
+                "## Be sure to cat the modified list into /dev/cpu/msr_allowlist.\n"  
+                "## See the README file for more details.\n##\n")
         f.write("# MSR        # Write Mask       # Comment\n")
+
         for msr, name in msrs:
-            try: 
-                cat = msr_map.get_categories(msr);
-                cat = list(set(cat).intersection(df_dm[architecture])) 
-                f.write('# 0x{0:08X} 0x0000000000000000 # "{1} (Table: {2})"\n'.format(msr, name, cat[-1]))
-            except ValueError:
-                print('Invalid MSR: ' + msr)
+            if msr not in errata_list:
+                try: 
+                    err = msr_map.check_duplicate_name(msr, df_dm[architecture])
+                    #print(err)
+                    if err is not None:
+                        print(err)
+                        for key in err:
+                            table = key
+                        name = err[table]
+                        errata_list.append(msr)
+                    else:
+                        table = msr_map.get_table(msr);
+                        table = list(set(table).intersection(df_dm[architecture]))[-1] 
+                    f.write('# 0x{0:08X} 0x0000000000000000 # "{1} (Table: {2})"\n'.format(msr, name, table))
+                #f.write(f'# 0x{0:08X} 0x0000000000000000 #'.format(msr))
+                #for dup in errata:
+                #    if msr == dup[0]:
+                #        f.write(f"ERRATA duplicate MSR {dup[0]:#X} address with different labels:")
+                #        f.write(f"Name: {dup[1][1]} Table: {dup[1][0]} and Name: {dup[2][1]} table:{dup[2][0]}\n")
+                #        errata.remove(dup)
+                #        break
+
+                #f.write(f'{1} (Table: {2})"\n'.format(name, cat))
+                except ValueError:
+                    print('Invalid MSR: ' + msr)
+            else:
+                print(f'ignored msr {msr:#X} as it has been determined to be errata, it\'s most recent definition will be used')
+
     print('Template written to templates/' + filename)
 
 def main():
