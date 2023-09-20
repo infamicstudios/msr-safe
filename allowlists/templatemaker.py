@@ -102,7 +102,7 @@ class MSRMap:
         #print(msr)
         names = self.msr_names.get(msr, table_list)
         namess = set([name for name in names.values()])
-        if len(namess) is not 1:
+        if len(namess) != 1:
             return names
 
         return None
@@ -164,7 +164,7 @@ def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
                     err = msr_map.check_duplicate_name(msr, df_dm[architecture])
                     #print(err)
                     if err is not None:
-                        print(err)
+                        #print(err)
                         for key in err:
                             table = key
                         name = err[table]
