@@ -10,6 +10,9 @@ import re
 
 scrap_dir = 'Intel_MSRs/blr'
 
+docname = ("volume 4 of the Intel 64 and IA-32 Architectures\n"
+           "## Software Development Manual (335592-079US March 2023)")
+
 class MSRMap:
     def __init__(self, directory=scrap_dir):
         self.msrs = {}
@@ -96,13 +99,20 @@ class MSRMap:
         msrs.sort()
         return msrs
 
+    def msr_arch_filter(self, key, table_list):
+        key, value = pair
+        if key in table_list:
+            return true
+        return False
+
     def check_duplicate_name(self, msr, table_list):
-        #print(table_list)
-        #print(self.msr_names.get(msr,[]))
-        #print(msr)
-        names = self.msr_names.get(msr, table_list)
+        names = {}
+        for table in table_list:
+            a_name = self.msr_names.get(msr, {}).get(table, "") 
+            if a_name != '':
+                names[table] = a_name 
         namess = set([name for name in names.values()])
-        if len(namess) != 1:
+        if len(namess) != 1: 
             return names
 
         return None
@@ -144,9 +154,6 @@ df_dm = {
 msr_map = MSRMap()
 
 def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
-    docname = ("volume 4 of the Intel 64 and IA-32 Architectures\n"
-               "# Software Development Manual (335592-079US March 2023)")
-
     errata_list = []
 
     with open(os.path.join(directory, "al_"+filename), 'w') as f:
@@ -172,6 +179,8 @@ def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
                     else:
                         table = msr_map.get_table(msr);
                         table = list(set(table).intersection(df_dm[architecture]))[-1] 
+                    
+                    #print(table)
                     f.write('# 0x{0:08X} 0x0000000000000000 # "{1} (Table: {2})"\n'.format(msr, name, table))
                 #f.write(f'# 0x{0:08X} 0x0000000000000000 #'.format(msr))
                 #for dup in errata:
@@ -214,7 +223,7 @@ def main():
             print('Enter output filename:')
             filename = input()
             with open(os.path.join('templates', filename), 'w'):
-                write_msrs_to_file(msrs, filename)
+                write_msrs_to_file(msrs, filename, architecture)
             print('Template written to templates/' + filename)
 
 if __name__ == '__main__':
