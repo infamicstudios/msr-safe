@@ -81,7 +81,6 @@ class MSRMap:
         self.file_indices = collections.OrderedDict(sorted(self.file_indices.items()))
         self.sorted = True
 
-    
     def generate_sorted_unique_msrs_for_file_list(self, table_list):
         msrs = []
         for table in table_list:
@@ -151,6 +150,16 @@ df_dm = {
 }
 
 
+def find_largest_table(nums):
+    def parse_num(num_str):
+        a, b = map(int, num_str.split('-'))
+        return a, b
+    
+    if len(nums) > 1:
+       return max(nums, key=parse_num)
+    return nums[0]
+
+
 msr_map = MSRMap()
 
 def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
@@ -178,7 +187,10 @@ def write_msrs_to_file(msrs, filename, architecture, directory='templates'):
                         errata_list.append(msr)
                     else:
                         table = msr_map.get_table(msr);
-                        table = list(set(table).intersection(df_dm[architecture]))[-1] 
+                        #print(table)
+                        table = list(set(table).intersection(df_dm[architecture]))
+                        table = find_largest_table(table)
+                    #print(msr, table)
                     
                     #print(table)
                     f.write('# 0x{0:08X} 0x0000000000000000 # "{1} (Table: {2})"\n'.format(msr, name, table))
